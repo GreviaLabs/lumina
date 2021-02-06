@@ -1,0 +1,20 @@
+Install Lumen
+ 
+-------------------------------------
+add request
+
+folder vendor/laravel/lumen-framework/src/Application.php:
+
+find "public function withAliases($userAliases = [])"
+
+add these 
+ 'Illuminate\Support\Facades\Request' => 'Request',
+-------------------------------------
+
+
+-------------------------------------
+allow bootstrap folder
+
+check DB collation here
+vendor\laravel\lumen-framework\config\database.php
+-------------------------------------

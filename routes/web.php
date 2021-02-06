@@ -55,4 +55,14 @@ $router->group(['prefix'=>'api/v1/'], function() use($router){
     $router->get('product/{id}', 'ProductController@show');
     $router->put('product/{id}', 'ProductController@update');
     $router->delete('product/{id}', 'ProductController@destroy');
+	
+	// Log
+	$router->get('log', 'LogController@index');
+});
+
+$router->group(['prefix' => 'test/v1'], function() use($router){
+    
+    $router->group(['prefix' => 'log'], function() use($router){
+		$router->get('/hello', 'Api\v1\LogController@index');
+	});
 });

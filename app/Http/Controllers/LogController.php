@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 - delete method deletes a product resource by its id and returns a success message.
 */
 
-class ProductController extends Controller
+class LogController extends Controller
 {
     /**
      * Create a new controller instance.
@@ -20,7 +20,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::all();
+        // $products = Product::all();
         return response()->json($products);
     }
 

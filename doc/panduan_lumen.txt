@@ -1,3 +1,13 @@
+******************************************
+1. run composer install
+
+
+2. setting database 
+
+
+3.
+******************************************
+
 <pre>
 # Seeding database source https://medium.com/@Dotunj/building-a-rest-api-with-lumen-403b67fec4d6
 # script to manipulate data via commandline

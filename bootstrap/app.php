@@ -2,6 +2,9 @@
 
 require_once __DIR__.'/../vendor/autoload.php';
 
+// Declare constant here
+require_once __DIR__.'/constant.php';
+
 try {
     (new Dotenv\Dotenv(__DIR__.'/../'))->load();
 } catch (Dotenv\Exception\InvalidPathException $e) {
