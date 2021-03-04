@@ -1,0 +1,28 @@
+BRANCH GIT:
+- MASTER  	---------> Server PRODUCTION
+- RELEASE 	---------> Server NON PRODUCTION
+- FEATURE-X ---------> Server NON PRODUCTION (as much as needed while development)
+- FEATURE-Y ---------> Server NON PRODUCTION (as much as needed while development)
+- FEATURE-Z ---------> Server NON PRODUCTION (as much as needed while development)
+
+
+
+                  MASTER(server_production)
+				    |   
+		---------RELEASE---------------------------------
+		|			|			|			 |		 	|
+	FEATURE-X	FEATURE-Y	FEATURE-Z		DEV			QA
+										(server_dev)  (server_qa)
+										
+										
+-----------------------
+PATCH PRODUCTION
+-----------------------
+
+Lead developer will do:
+- pointing current local directory to branch RELEASE & makesure all script pushed to RELEASE
+- checkout current local directory pointing to branch MASTER: git checkout master
+- makesure again by doing git status
+- doing mergin with: git merge origin/release
+- doing push : git push origin master
+- login SSH to server PRODUCTION: doing git pull

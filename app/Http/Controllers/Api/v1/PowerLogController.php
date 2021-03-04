@@ -1,0 +1,366 @@
+<?php
+
+namespace App\Http\Controllers\Api\v1;
+
+use App\Http\Controllers\Controller;
+
+use Input;
+use Validator;
+use Session;
+use Illuminate\Support\Facades\Redirect;
+// use Illuminate\Http\Request;
+
+// use Request;
+use DB;
+
+use App\Models\SiteModel;
+
+class PowerLogController extends ApiController {
+
+	/*
+	|--------------------------------------------------------------------------
+	| Home Controller
+	|--------------------------------------------------------------------------
+	|
+	| Api for controller handler created by rusdi on monday 3 september 2018 14:16
+	| controller as you wish. It is just here to get your app started!
+	|
+    */
+    public $table = 'ms_power_log';
+    public $primary_key = 'power_log_id';
+    public $list_column = array('site_id','pin_ups');
+    // public $list_column = array('site_id','pin_ups','pressed', 'status', 'created_at', 'created_by','created_ip','updated_at','updated_by','updated_ip');
+	
+	/**
+	 * Create a new controller instance.
+	 *
+	 * @return void
+	 */
+	public function __construct()
+	{		
+		// $this->middleware('guest');
+
+		// auth from apicontroller
+		parent::__construct();
+
+	}
+
+	/**
+	 * Show the application dashboard to the user.
+	 *
+	 * @return Response
+	 */
+	public function get()
+	{
+		$attr = NULL;
+		if (! empty($_GET)) $attr = $_GET;
+			
+		$q = '
+		SELECT *
+		FROM ' . $this->table . '
+		WHERE 1';
+		
+		if (isset($attr['power_log_id']) && $attr['power_log_id'] != '') {
+			$q.= ' AND power_log_id = '.$attr['power_log_id'];
+		}
+		
+		if (isset($attr['site_id']) && $attr['site_id'] != '') {
+			$q.= ' AND site_id = '.replace_quote($attr['site_id']);
+		}
+		
+		// if (isset($attr['status']) && in_array(array(-1,0,1),$attr['status'])) {
+		// 	$q.= ' AND status = '.$attr['status'];
+        // } else {
+		// 	$q.= ' AND status != -1';
+		// }
+
+		$data = orm_get($q);
+		if (empty($data)) $data['data'] = NULL;
+		echo json_encode($data);
+		die;
+	}
+	
+	public function get_list()
+	{
+		//coba disini
+		// $query = "INSERT INTO ms_power_log(site_id,pin_ups) VALUES('sz24','1'), ('sz25','22'), ('sz26','32'), ('sz30','testing');";
+		// $run = DB::statement($query);
+		// debug($run,1);
+
+		$attr = $result = NULL;
+		if (! empty($_GET)) $attr = $_GET;
+			
+		// $q = '
+		// SELECT * 
+		// FROM ' . $this->table . ' 
+		// WHERE 1';
+		
+		$q = '
+        SELECT *
+        FROM ' . $this->table . '
+		WHERE 1';
+		
+		if (isset($attr['keyword']) && $attr['keyword'] != '') {			
+			$q.= ' AND ( ';
+			$q.= ' site_id LIKE '.replace_quote($attr['keyword'],'like');
+			// $q.= ' OR site_name LIKE '.replace_quote($attr['keyword'],'like');
+			// $q.= ' OR site_address LIKE '.replace_quote($attr['keyword'],'like');
+			// $q.= ' OR method_calc LIKE '.replace_quote($attr['keyword'],'like');
+			// $q.= ' OR logo_file_name LIKE '.replace_quote($attr['keyword'],'like');
+			$q.= ')';
+        }
+		
+		if (isset($attr['site_id']) && $attr['site_id'] != '') {
+			$q.= ' AND site_id = ' . replace_quote($attr['site_id']);
+        }
+		
+		// if (isset($attr['company_id']) && $attr['company_id'] != '') {
+		// 	$q.= ' AND s.company_id = '.$attr['company_id'];
+        // }
+		
+		// if (isset($attr['status']) && in_array(array(-1,0,1),$attr['status'])) {
+		// 	$q.= ' AND status = '.$attr['status'];
+        // } else {
+		// 	$q.= ' AND status != -1';
+		// }
+        
+        $result['total_rows'] = count(orm_get_list($q));
+		
+		if (isset($attr['order'])) { 
+			
+			// extra order table company
+			// $extra_order = array('company_name');			
+			// if (in_array($attr['order'],$extra_order)) $attr['order'] = 'c.'.$attr['order'];
+
+			$q.= ' ORDER BY ' . $attr['order'];
+			if (isset($attr['orderby'])) $q .= ' '.$attr['orderby']; 
+		} else  {
+			$q.= ' ORDER BY '. $this->primary_key .' DESC';
+		}
+		
+		// set default paging
+		if (! isset($attr['paging'])) {
+			if (! isset($attr['offset'])) $attr['offset'] = OFFSET;
+			if (! isset($attr['perpage'])) $attr['perpage'] = PERPAGE;
+		}
+		
+		if (isset($attr['offset'])) { 
+			$q.= ' LIMIT ' . $attr['offset'];
+			
+			if (! isset($attr['perpage'])) $attr['perpage'] = PERPAGE;
+			
+			$q.= ', ' . $attr['perpage'];
+		}
+
+		$data = orm_get_list($q);
+		if (empty($data)) $data = NULL;
+        $result['data'] = $data;
+        
+        echo json_encode($result); 
+		die;
+	}
+
+	public function save()
+	{
+        $post = $attr = $result = NULL;
+		if (! empty($_POST)) $post = $_POST;
+		
+		// validate_column
+		$attr = validate_column($this->list_column, $post);
+        
+        if (! empty($attr)) {
+            $save = DB::table($this->table)->insert($attr);
+            
+            if ($save) {
+                $result['last_insert_id'] = DB::getPdo()->lastInsertId();
+				$result['is_success'] = 1;
+                $result['message'] = 'save success';
+            } else {
+				$result['is_success'] = 0;
+                $result['message'] = 'save failed';
+            }
+        }
+
+        echo json_encode($result);
+        die;
+	}
+	
+	public function insert_bulk()
+	{
+		$post = $attr = $result = NULL;
+
+        if (! empty($_POST)) $post = $_POST;
+
+		// $hit = NULL;
+		// $hit[0]['site_id'] = 'sz25';
+		// $hit[0]['pin_ups'] = 'dame';
+
+		// $hit[1]['site_id'] = 'sz26';
+		// $hit[1]['pin_ups'] = 'upslagi';
+
+		// $hit[2]['site_id'] = 'sz27';
+		// $hit[2]['pin_ups'] = 'yoyoooo';
+
+		// echo json_encode($hit);
+		// die;
+
+		// debug('jalanga'.HR);
+		// debug($put,1);
+		
+		// $attr = validate_column($this->list_column, $put);
+		
+		$result['is_success'] = 1;
+		$result['message'] = NULL;
+        
+        // if (empty($attr)) $result['message'] = 'no data';
+        
+		// if (! isset($attr[$this->primary_key])) $result['message'] = $this->primary_key . ' must be filled.';
+		
+		// // Print error if message exist
+		// if (isset($result['message'])) {
+		// 	$result['is_success'] = 0;
+		// 	if (isset($attr)) $result['paramdata'] = $attr;
+		// 	echo json_encode($result);
+		// 	die;
+		// }
+
+		//coba disini
+		// $query = "INSERT INTO ms_power_log(site_id,pin_ups) VALUES('sz24','1'), ('sz25','22'), ('sz26','32'), ('sz30','testing');";
+		// debug($put,1);
+
+		// POSTMAN 
+		// 0[site_id]:po1
+		// 0[pin_ups]:test1
+
+		// 1[site_id]:po2
+		// 1[pin_ups]:test2
+
+		if (! empty($pot)) 
+		{
+			$attr = NULL;
+			foreach ($post as $_post) 
+			{
+				$attr[] = validate_column($this->list_column, $_post);
+				// debug($putrs);
+				// debug(HR);
+			}
+			debug($attr);
+		}
+		die;
+
+		$update = DB::statement($query);
+		// debug($update,1);
+
+		if ($update) {
+			$result['is_success'] = 1;
+			$result['message'] = 'bulk insert success';
+		} else {
+			$result['is_success'] = 0;
+			$result['last_query'] = $query;
+			$result['message'] = 'bulk insert failed';
+			// $result['query'] = $update->toSql();
+		}
+
+        echo json_encode($result);
+        die;
+	}
+	
+	public function update()
+	{
+		$put = $attr = $result = NULL;
+
+        if ($_SERVER['REQUEST_METHOD'] == 'PUT') parse_str(file_get_contents("php://input"), $_PUT);
+
+		$put = $_PUT;
+		
+		$attr = validate_column($this->list_column, $put);
+		
+		$result['is_success'] = 1;
+		$result['message'] = NULL;
+        
+        if (empty($attr)) $result['message'] = 'no data';
+        
+		if (! isset($attr[$this->primary_key])) $result['message'] = $this->primary_key . ' must be filled.';
+		
+		// Print error if message exist
+		if (isset($result['message'])) {
+			$result['is_success'] = 0;
+			if (isset($attr)) $result['paramdata'] = $attr;
+			echo json_encode($result);
+			die;
+		}
+
+		/************ Start operation ************/
+		$param_where = $attr[$this->primary_key];
+		unset($attr[$this->primary_key]);
+
+		$update = DB::table($this->table)
+			->where($this->primary_key, $param_where)
+			->update($attr);
+			
+		if ($update) {
+			$result['is_success'] = 1;
+			$result['message'] = 'update success';
+		} else {
+			$result['is_success'] = 0;
+			$result['message'] = 'update failed';
+			// $result['query'] = $update->toSql();
+		}
+
+        echo json_encode($result);
+        die;
+	}
+	
+	public function delete()
+	{
+		$delete = $attr = $result = NULL;
+
+        if ($_SERVER['REQUEST_METHOD'] == 'DELETE') parse_str(file_get_contents("php://input"), $_DELETE);
+
+        $delete = $_DELETE;
+		
+		$attr = validate_column($this->list_column, $delete);
+		
+		$result['is_success'] = 1;
+		$result['message'] = NULL;
+        
+        if (empty($attr)) $result['message'] = 'no data';
+        
+		if (! isset($attr[$this->primary_key])) $result['message'] = $this->primary_key . ' must be filled.';
+		
+		// Print error if message exist
+		if (isset($result['message'])) {
+			$result['is_success'] = 0;
+			if (isset($attr)) $result['paramdata'] = $attr;
+			echo json_encode($result);
+			die;
+		}
+
+		/************ Start operation ************/
+		$param_where = $attr[$this->primary_key];
+		// unset($attr[$this->primary_key]);
+		$attr['status'] = '-1';
+
+		$update = DB::table($this->table)
+			->where($this->primary_key, $param_where)
+			->update($attr);
+			
+		if ($update) {
+			$result['is_success'] = 1;
+			$result['message'] = 'delete success';
+		} else {
+			$result['is_success'] = 0;
+			$result['message'] = 'delete failed';
+			// $result['query'] = $update->toSql();
+		}
+
+        echo json_encode($result);
+        die;
+	}
+	
+	public function __destruct()
+	{
+		// parent::__construct();
+	}
+	
+}
